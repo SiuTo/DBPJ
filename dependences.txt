@@ -1,0 +1,2 @@
+city_id city city_pinyin
+small_cate_id small_cate
