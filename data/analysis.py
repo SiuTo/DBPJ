@@ -1,12 +1,6 @@
 #! /usr/bin/env python3.4
 
-import re
-
-def loadcsv(fileName):
-	dataFile = open(fileName, "r")
-	lines = dataFile.readlines()
-	data = [re.findall('(?<=")[^"]*(?=",|"\n)', lines[i]) for i in range(len(lines))]
-	return data
+from loadData import loadcsv
 
 data = loadcsv("data.csv")
 m = len(data)
