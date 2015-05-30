@@ -14,14 +14,14 @@ print("Constant attributes:")
 for j in range(n):
 	same = True
 	p = 1
-	while p<n and data[p][j]=="":
+	while p<m and data[p][j]=="":
 		p += 1
-	for i in range(p+1, n):
+	for i in range(p+1, m):
 		if data[i][j]!="" and data[i][j]!=data[p][j]:
 			same = False
 			break
 	if same:
-		if p<n:
+		if p<m:
 			value = data[p][j]
 		else:
 			value = ""
