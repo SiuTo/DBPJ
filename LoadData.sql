@@ -5,7 +5,6 @@ city				VARCHAR(10),
 city_pinyin			VARCHAR(20),
 PRIMARY KEY(city_id));
 
-
 CREATE TABLE data1(
 shop_id				VARCHAR(8),
 `name`				VARCHAR(40),
@@ -44,7 +43,7 @@ card 				VARCHAR(200),
 PRIMARY KEY(shop_id),
 FOREIGN KEY(city_id) REFERENCES data2(city_id));
 
-LOAD DATA INFILE 'C:\data_2.csv' 
+LOAD DATA INFILE '/ProgramData/MySQL/MySQL Server 5.6/data/data_2.csv' 
 INTO TABLE data2
 FIELDS TERMINATED BY ',' 
 OPTIONALLY ENCLOSED BY '"' 
@@ -52,8 +51,7 @@ ESCAPED BY '"'
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES; 
 
-
-LOAD DATA INFILE 'C:\data_1.csv' 
+LOAD DATA INFILE '/ProgramData/MySQL/MySQL Server 5.6/data/data_1.csv' 
 INTO TABLE data1
 FIELDS TERMINATED BY ',' 
 OPTIONALLY ENCLOSED BY '"' 
