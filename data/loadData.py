@@ -1,11 +1,11 @@
 #! /usr/bin/env python3.4
 
-import re
+import csv
 
 def loadcsv(fileName):
 	dataFile = open(fileName, "r")
-	lines = dataFile.readlines()
-	data = [re.findall('(?<=")[^"]*(?=",|"\n)', lines[i]) for i in range(len(lines))]
+	dataCSV = csv.reader(dataFile)
+	data = [row for row in dataCSV]
 	dataFile.close()
 	return data
 

@@ -1,6 +1,7 @@
 #! /usr/bin/env python3.4
 
 from loadData import loadcsv
+import csv
 
 def gen(attrFileName, dataFileName):
 	attrFile = open(attrFileName, "r")
@@ -8,17 +9,16 @@ def gen(attrFileName, dataFileName):
 	items = [attr[lines[i][:-1]] for i in range(len(lines))]
 		
 	key = set()
-	lines = []
+	newData = []
 	for i in range(0, m):
 		if data[i][items[0]] not in key:
 			key.add(data[i][items[0]])
-			line = '"'+data[i][items[0]]+'"'
-			for j in range(1, len(items)):
-				line += ',"'+data[i][items[j]]+'"'
-			lines.append(line+"\n")
+			row = [data[i][x] for x in items]
+			newData.append(row)
 
 	dataFile = open(dataFileName, "w")
-	dataFile.writelines(lines)
+	dataCSV = csv.writer(dataFile, quoting=csv.QUOTE_ALL, lineterminator='\n')
+	dataCSV.writerows(newData)
 
 data = loadcsv("data.csv")
 m = len(data)
