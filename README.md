@@ -1,6 +1,10 @@
 # DBPJ
 A project of Database course.
 
+## Dependences
+
+* MySQL 5.5
+
 ## Documentation
 
 ### Task1
@@ -14,6 +18,14 @@ A project of Database course.
 ### Task2
 
 ### Task3
+
+## References
+
+* [MySQL Doc](https://dev.mysql.com/doc/refman/5.5/en/index.html)
+* [MySQL中的数据类型](http://blog.csdn.net/bzhxuexi/article/details/43700435)
+* [数据类型的优化](http://blog.csdn.net/puqutogether/article/details/45647869)
+* [SJTU lab](http://cbb.sjtu.edu.cn/course/database/lab6.htm)
+* [性能优化的经验](http://coolshell.cn/articles/1846.html)
 
 ## Contributors
 Xiaotao Liang, Sizhe Li
