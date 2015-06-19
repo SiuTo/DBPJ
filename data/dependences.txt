@@ -1,2 +1,2 @@
-city_id city city_pinyin
+city_id city city_pinyin province
 small_cate_id small_cate

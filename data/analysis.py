@@ -1,6 +1,7 @@
 #! /usr/bin/env python3.4
 
 from loadData import loadcsv
+import csv
 
 data = loadcsv("data.csv")
 m = len(data)
@@ -44,13 +45,21 @@ for i in range(n):
 			reserve[j] = False
 print()
 
-attrFile = open("attr_list.txt", "w")
-lines = []
-for i in range(n):
-	if reserve[i]:
-		lines.append(data[0][i]+"\n")
-attrFile.writelines(lines)
+attrCSV = csv.writer(open("attr_list.csv", "w"), lineterminator='\n')
+rows = [["Name", "Length", "Numeric"]]
+for j in range(n):
+	if reserve[j]:
+		name = data[0][j]
+		length = 0
+		numeric = True
+		for i in range(1, m):
+			if data[i][j]!="":
+				length = max(length, len(data[i][j]))
+				numeric = numeric and data[i][j].isnumeric()
+		rows.append([name, length, numeric])
+attrCSV.writerows(rows)
 
+print("Check dependences:")
 dependFile = open("dependences.txt", "r")
 lines = dependFile.readlines()
 for k in range(len(lines)):
