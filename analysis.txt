@@ -1,0 +1,64 @@
+1.1查询表中所有字段
+select * from city;(约0.0003s)
+由于选出全部city中的字段，所以至少读取59行
+explain语句显示操作预计从59条记录中取出
+
+select * from shop;(约0.015s)
+同上，至少读取1000行
+explain语句显示操作预计读取1029行(这个值是估计值，每次重新连接后的值不同)
+
+1.2查询表中指定字段
+select city_id,city from city;(约0.0003s)
+需要浏览全部city元组，至少需读取59行
+explain语句显示操作预计从59条记录中取出
+
+select shop_id from shop;(约0.0009s)
+需要浏览全部元组，至少需要1000行
+explain语句显示使用了shop中的主键索引shop_id，因为减少了许多返回的列，所以查询时间相比于1中减少了很多
+
+select shop_id,`name`,description from shop;(约0.005s)
+同样需要浏览1000行，由此可以看出在需要浏览相同行数的时候，返回的列数与执行时间正相关
+
+1.3查询表中没有重复的字段（distinct）的使用
+
+select distinct(city) from city;(约0.0007s)
+由于在city字段中没有索引，所以还是需要浏览全部59行
+explain语句显示未使用索引，并且预计读取59行数据，由于distinct涉及到排序，所以使用了临时表来存储数据，相比于select city from city慢了几乎一倍
+
+select distinct(city_id) from shop;(约0.0007s)
+虽然shop有1000行数据，但实际查询时间与上一条相当，应该是由于在city_id上存在键
+explain语句显示操作使用了索引，且预计读取数据只需要88行，mysql会查询DISTINCT包含的所有列而不要额外搜索硬盘访问实际的表。并且，按最有效的方式使用索引，以便对于每个组，只读取少量索引条目
+
+select distinct(province) from shop;(约0.015s)
+在province上不存在索引，因此需要读取1000行，再进行排序去重，相比于1.2中的直接查询，慢了很多
+explain语句显示mysql使用了额外的临时表来进行排序，因此耗费了很多时间
+
+1.4条件查询各表主键的字段（单值查询或范围查询）
+select shop_id from shop where shop_id>='10016726' and shop_id<='10037311';(约0.0005s)
+由于在shop_id中存在主键索引，在进行这样的范围查询时可直接通过索引二分查找，速度很快，上述查询返回153条数据也只需要0.0005s
+explain语句显示查询使用了此索引，读取了152行
+
+select shop_id,`name` from shop where shop_id='10016726';(约0.0003s)
+同上，同样由于shop_id为主键索引，采用二分查找
+explain显示由于使用了索引，所以实际只需要读取一行数据即可
+
+1.5条件查询各表中普通字段（单值查询或范围查询）
+select shop_id,`name` from shop where province='上海';(约0.0014s)
+由于在province上不存在任何索引，在查找时只能够搜索整个文件
+explain语句显示需要读取全部数据，所以查询时间较长
+
+select city_id,city_pinyin from city where city='上海';(约0.0004s)
+同样由于没有索引，需要读取全部数据才能完成搜素，相比于在有索引的主键上完成查询慢了很多
+
+1.6一个表中多个字段条件查询（单值查询或范围查询）
+select shop_id,`name` from shop where province='上海' and avg_price<30;(约0.0014s)
+在province和avg_price上均没有索引，也需要浏览整个文件一遍，而做选择操作很快，所以时间与1.5中第一个查询相近
+
+select shop_id,`name` from shop where shop_id>'10016726' and shop_id<'10021920' and avg_price<30;(约0.0009s)
+相似的选择操作，由于shop_id上索引的存在，mysql会先利用索引选出shop_id符合条件的组，再挑选其中avg_price符合的，大大减少了查询时间
+explain语句显示需要读取104行数据，并且查询使用了索引
+
+1.7用”in”进行条件查询
+
+
+
