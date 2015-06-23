@@ -1,64 +1,88 @@
+由于查询时间与查询时机器的各项性能有关，以下的查询时间均取多次查询中的最短时间
 1.1查询表中所有字段
 select * from city;(约0.0003s)
 由于选出全部city中的字段，所以至少读取59行
 explain语句显示操作预计从59条记录中取出
 
-select * from shop;(约0.015s)
+select * from shop;(约0.01s)
 同上，至少读取1000行
 explain语句显示操作预计读取1029行(这个值是估计值，每次重新连接后的值不同)
+
+并且这两种查询由于必须读取全部数据，因此无法进行查询优化
 
 1.2查询表中指定字段
 select city_id,city from city;(约0.0003s)
 需要浏览全部city元组，至少需读取59行
 explain语句显示操作预计从59条记录中取出
+即使对city字段加上索引也无法提高查询速度，因为无论如何都需要读取全部数据
 
 select shop_id from shop;(约0.0009s)
 需要浏览全部元组，至少需要1000行
-explain语句显示使用了shop中的主键索引shop_id，因为减少了许多返回的列，所以查询时间相比于1中减少了很多
+explain语句显示使用了shop中的主键索引shop_id，但实际仍需要读取全部行，因为减少了许多返回的列，所以查询时间相比于1.1中减少了很多
 
 select shop_id,`name`,description from shop;(约0.005s)
 同样需要浏览1000行，由此可以看出在需要浏览相同行数的时候，返回的列数与执行时间正相关
 
+对于需要返回一个字段全部数据的查询，添加索引并不能提高查询速度，因为无论如何都需要读取全部的数据，因此在查询中应尽量避免这种查询
+
 1.3查询表中没有重复的字段（distinct）的使用
 
-select distinct(city) from city;(约0.0007s)
-由于在city字段中没有索引，所以还是需要浏览全部59行
-explain语句显示未使用索引，并且预计读取59行数据，由于distinct涉及到排序，所以使用了临时表来存储数据，相比于select city from city慢了几乎一倍
-
-select distinct(city_id) from shop;(约0.0007s)
-虽然shop有1000行数据，但实际查询时间与上一条相当，应该是由于在city_id上存在键
-explain语句显示操作使用了索引，且预计读取数据只需要88行，mysql会查询DISTINCT包含的所有列而不要额外搜索硬盘访问实际的表。并且，按最有效的方式使用索引，以便对于每个组，只读取少量索引条目
-
-select distinct(province) from shop;(约0.015s)
-在province上不存在索引，因此需要读取1000行，再进行排序去重，相比于1.2中的直接查询，慢了很多
-explain语句显示mysql使用了额外的临时表来进行排序，因此耗费了很多时间
+select distinct(area) from shop;(约0.005s)
+由于在area上不存在索引，因此需要浏览全部数据
+explain语句显示由于distinct需要排序，因此使用了额外的表来排序，加长了查询时间
+优化：可对area字段加上索引，此时查询时间缩短到约0.003s,explain语句显示没有使用额外表来排序，而是使用了索引，预计读取行数也少于全部
 
 1.4条件查询各表主键的字段（单值查询或范围查询）
-select shop_id from shop where shop_id>='10016726' and shop_id<='10037311';(约0.0005s)
-由于在shop_id中存在主键索引，在进行这样的范围查询时可直接通过索引二分查找，速度很快，上述查询返回153条数据也只需要0.0005s
-explain语句显示查询使用了此索引，读取了152行
+select `name` from shop where shop_id>10016726 and shop_id<10021920;(约0.0007s)
+在shop_id上存在主键，因此这样的范围查询可直接使用索引，查询时间很短
+explain语句显示使用了主键索引，读取了104行数据
 
-select shop_id,`name` from shop where shop_id='10016726';(约0.0003s)
-同上，同样由于shop_id为主键索引，采用二分查找
-explain显示由于使用了索引，所以实际只需要读取一行数据即可
+在对主键字段进行查询时，因为在主键上均存在索引，这样的范围或单值查询速度会非常快
 
 1.5条件查询各表中普通字段（单值查询或范围查询）
-select shop_id,`name` from shop where province='上海';(约0.0014s)
-由于在province上不存在任何索引，在查找时只能够搜索整个文件
-explain语句显示需要读取全部数据，所以查询时间较长
+select shop_id,`name` from shop where small_cate='面包甜点';(约0.0015s)
+由于在small_cate中不存在索引，在进行这样的范围查询时必须搜索全部记录，效率很低
+explain语句显示查询使用了where，读取了全部数据，返回149条记录
+优化：在small_cate上添加索引，之后查询时间缩短到小于0.001s，explain语句显示查询使用了索引，且只需要读取要返回的149条记录，因此时间大大缩短
 
-select city_id,city_pinyin from city where city='上海';(约0.0004s)
-同样由于没有索引，需要读取全部数据才能完成搜素，相比于在有索引的主键上完成查询慢了很多
+select shop_id,`name` from shop where avg_price<20;(约0.0027s)
+同上，在avg_price上没有索引，需要读取全部行,相比1.4中的范围查询慢了许多
+优化：对avg_price创建索引，查询时间缩短到0.001s，同样只需读取与返回数相同数量的元组
+
+由此可见，创建索引对于单值查询和范围查询有着比较好的效果，能够显著提高查询效率
 
 1.6一个表中多个字段条件查询（单值查询或范围查询）
-select shop_id,`name` from shop where province='上海' and avg_price<30;(约0.0014s)
-在province和avg_price上均没有索引，也需要浏览整个文件一遍，而做选择操作很快，所以时间与1.5中第一个查询相近
+select shop_id,`name` from shop where small_cate='面包甜点' and avg_price<20;(约0.0013s)
+small_cate与avg_price均不存在索引，需要读取全部行，再选出符合条件的元组，查询时间较长
+优化：对所查询的字段增加索引，当对avg_price添加索引时，查询时间缩短到0.0009s，mydql会先对avg_price通过索引选出所用元组，再选择small_cate
+若对small_cate添加索引，时间缩短到0.0007s，这是因为先选择small_cate符合条件的元组数目比avg_price小很多
+若对small_cate和avg_price添加共同索引，查询时间降低到0.0006s左右，mysql直接访问索引然后读取符合条件的元组
 
-select shop_id,`name` from shop where shop_id>'10016726' and shop_id<'10021920' and avg_price<30;(约0.0009s)
-相似的选择操作，由于shop_id上索引的存在，mysql会先利用索引选出shop_id符合条件的组，再挑选其中avg_price符合的，大大减少了查询时间
-explain语句显示需要读取104行数据，并且查询使用了索引
+因此对于单值或范围查询，应尽量使索引覆盖查询的字段，这样能够明显的缩短查询时间
 
 1.7用”in”进行条件查询
+select 
 
+1.8一个表中group by、order by、having联合条件查询
+select small_cate,count(*) from shop where avg_price<20 group by small_cate;(约0.0015s)
+mysql在处理group by时会建立一个临时表。然后利用mysql内部算法，算出来结果，但由于使用了临时表和排序，查询时间通常较长
+explain语句显示using temporary，using filesort
+优化：在这个查询语句之中，where部分和group by部分分别用了两个字段，因此只对其中一个字段加索引并不能有效提高查询效率，需要对avg_price,small_cate同时添加索引(avg_price,small_cate)，此时查询时间缩短到0.0007s左右，explain语句显示查询使用了索引，但没有使用临时表和排序，因此查询时间大大缩短
+注意：group by对于1.对不同的索引键做group by(select * from a1 group by key1,key2;)
+2.在非连续的索引键部分上做 group by(select * from t1 where key2=constant group by key_part2;)
+3.where部分与group by部分不在同一索引中
+这几种情况下不会使用索引，因此在数据库索引已经创建好之后，应尽量避免这一类的查询
 
+select `name`,product_rating,avg_price from shop where small_cate='面包甜点' order by avg_price,product_rating;(约0.0016s)
+在无索引情况下，mysql执行order by语句需要对order by进行排序，比较耗费时间
+explain语句显示执行操作using filesort
+优化：同group by，需要同时对where部分与order by部分添加索引，并且索引的顺序也十分重要，(avg_price,product_rating,small_cate)形式的索引几乎不能提高查询效率，而(small_cate,avg_price,product_rating)形式的索引可以将查询时间缩短到0.0009s左右
+注意：同group by，对于以上几种情况以及在order by中同时使用了desc，asc时不会用到索引，查询效率提高较少
 
+having和where的区别在于having可以用来筛选聚合后的数据，where在聚合之前进行筛选，这样的筛选并不会影响查询的速度，考虑以下两条语句
+select small_cate,count(*) from shop where avg_price<20 group by small_cate;
+select small_cate,count(*) from shop where avg_price<20 group by small_cate having count(*)>2;
+这两条语句在查询速度上几乎相同，所以优化的主要部分在前面的操作上
+
+2.1多表联合查询
+select shop_id,`name`,city from shop,city where shop.city_id=city.city_id and avg_price<20;
