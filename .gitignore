@@ -1,3 +1,9 @@
 __pycache__
 .~*#
+*~
+
+*.out
+*.log
+*.aux
+*.toc
 
