@@ -1,5 +1,6 @@
 # DBPJ
 A project of Database course.
+(Data was removed.)
 
 ## Dependence
 
